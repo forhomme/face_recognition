@@ -1,6 +1,6 @@
 import cv2
-import threading
 from mysql_connection import TambahKaryawan
+import concurrent.futures
 
 
 class FaceRecognizer:
@@ -25,57 +25,53 @@ class FaceRecognizer:
         self.minW = minW
         self.minH = minH
 
-        # Define mysql connection
-        karyawan = TambahKaryawan()
-
     def predict_face(self, event):
-        while True:
-            ret, frame = self.cam.read()
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = self.face_detector.detectMultiScale(
-                gray,
-                scaleFactor=1.2,
-                minNeighbors=5,
-                minSize=(int(self.minW), int(self.minH)),
+        ret, frame = self.cam.read()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = self.face_detector.detectMultiScale(
+            gray,
+            scaleFactor=1.2,
+            minNeighbors=5,
+            minSize=(int(self.minW), int(self.minH)),
+        )
+
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            id, confidence = self.recognizer.predict(gray[y:y + h, x:x + w])
+
+            # If confidence is 100 : perfect match
+            if confidence <= 100:
+                with concurrent.futures.ThreadPoolExecutor as executor:
+                    thread1 = executor.submit(self.karyawan.select_data, id)
+                    nik, nama, jabatan = thread1.result()
+                    name = nama
+                    confidence = f"  {round(100 - confidence)}%"
+                if event:
+                    with concurrent.futures.ThreadPoolExecutor as executor:
+                        executor.submit(self.karyawan.insert_absen, nik, nama, jabatan)
+            else:
+                name = "unknown"
+                confidence = f"  {round(100 - confidence)}%"
+
+            cv2.putText(
+                frame,
+                str(name),
+                (x + 5, y - 5),
+                self.font,
+                1,
+                (255, 255, 255),
+                2
             )
-
-            for (x, y, w, h) in faces:
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                id, confidence = self.recognizer.predict(gray[y:y + h, x:x + w])
-
-                # If confidence is 100 : perfect match
-                if confidence <= 100:
-                    if event:
-
-                    name = id
-                    confidence = f"  {round(100 - confidence)}%"
-                else:
-                    name = "unknown"
-                    confidence = f"  {round(100 - confidence)}%"
-
-                cv2.putText(
-                    frame,
-                    str(name),
-                    (x + 5, y - 5),
-                    self.font,
-                    1,
-                    (255, 255, 255),
-                    2
-                )
-                cv2.putText(
-                    frame,
-                    str(confidence),
-                    (x + 5, y + h - 5),
-                    self.font,
-                    1,
-                    (255, 255, 0),
-                    1
-                )
-
-            # show the video and press q for quit
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            cv2.putText(
+                frame,
+                str(confidence),
+                (x + 5, y + h - 5),
+                self.font,
+                1,
+                (255, 255, 0),
+                1
+            )
+        return frame
 
     def release_video(self):
         self.cam.release()

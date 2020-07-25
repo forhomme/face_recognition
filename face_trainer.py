@@ -29,4 +29,3 @@ class TrainPicture:
         self.recognizer.write('trainer.yml')
         # print the number of faces trained
         print("\n [INFO] {0} faces trained. Exiting Program".format(len(np.unique(ids))))
-

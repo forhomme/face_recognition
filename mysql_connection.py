@@ -1,5 +1,7 @@
 import mysql.connector
 import datetime
+import multiprocessing as mp
+from queue import Empty
 
 
 class TambahKaryawan:
@@ -38,20 +40,32 @@ class TambahKaryawan:
             print(f"Data NIK: {nik} \nNama: {nama}")
             cursor.close()
 
-    def select_data(self, nik):
-        mysql_select_query = ("SELECT * FROM karyawan WHERE nik is %s")
+    def get_all_data(self, queue):
+        mysql_get_query = ("SELECT * FROM karyawan")
+
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(mysql_get_query)
+            records = cursor.fetchall()
+        except mysql.connector.Error as error:
+            print("Error while searching data: ", error)
+        finally:
+            queue.put(records)
+
+    def select_data(self, nik, queue):
+        mysql_select_query = ("SELECT * FROM karyawan WHERE nik = %s")
         data = (nik, )
 
         try:
             cursor = self.connection.cursor()
             cursor.execute(mysql_select_query, data)
+            records = cursor.fetchall()
+            for row in records:
+                queue.put(row)
         except mysql.connector.Error as error:
             print("Error while searching data: ", error)
         finally:
-            id = cursor[0]
-            nama = cursor[1]
-            jabatan = cursor[2]
-            return id, nama, jabatan
+            print(f"NIK: {row[0]}\nNama: {row[1]}")
 
     def insert_absen(self, id, nama, jabatan):
         mysql_insert_absen = ("INSERT INTO absensi (nik, hari, jam) VALUES (%s, %s, %s)")
@@ -74,12 +88,3 @@ class TambahKaryawan:
         if self.connection.is_connected():
             self.connection.close()
             print("Koneksi database diputus")
-
-
-nik = input("Masukan nomor NIK: ")
-nama = input("Masukkan Nama Karyawan: ")
-jabatan = input("Masukkan Jabatan Karyawan: ")
-
-karyawan = TambahKaryawan()
-karyawan.insert_data(nik, nama, jabatan)
-karyawan.close_connection()
