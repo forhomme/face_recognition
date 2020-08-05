@@ -21,16 +21,22 @@ class TambahKaryawan:
             if connection.is_connected():
                 db_Info = connection.get_server_info()
                 print("Connected to MySQL Server version ", db_Info)
-                self.connection = connection
+                connection.close()
 
     def insert_data(self, nik, nama, jabatan):
         mysql_insert_query = ("INSERT INTO karyawan (nik, nama, jabatan) VALUES (%s, %s, %s)")
         data = (nik, nama, jabatan)
 
         try:
-            cursor = self.connection.cursor()
+            connection = mysql.connector.connect(
+                host='localhost',
+                database='absen',
+                user='root',
+                password='root'
+            )
+            cursor = connection.cursor()
             cursor.execute(mysql_insert_query, data)
-            self.connection.commit()
+            connection.commit()
 
         except mysql.connector.Error as error:
             print("Error while inserting to MySQL: ", error)
@@ -39,25 +45,41 @@ class TambahKaryawan:
             print(cursor.rowcount, "Data berhasil diinput")
             print(f"Data NIK: {nik} \nNama: {nama}")
             cursor.close()
+            connection.close()
 
-    def get_all_data(self, queue):
+    def get_all_data(self):
         mysql_get_query = ("SELECT * FROM karyawan")
 
         try:
-            cursor = self.connection.cursor()
+            connection = mysql.connector.connect(
+                host='localhost',
+                database='absen',
+                user='root',
+                password='root'
+            )
+            cursor = connection.cursor()
             cursor.execute(mysql_get_query)
             records = cursor.fetchall()
+
         except mysql.connector.Error as error:
             print("Error while searching data: ", error)
         finally:
-            queue.put(records)
+            cursor.close()
+            connection.close()
+            return records
 
     def select_data(self, nik, queue):
         mysql_select_query = ("SELECT * FROM karyawan WHERE nik = %s")
         data = (nik, )
 
         try:
-            cursor = self.connection.cursor()
+            connection = mysql.connector.connect(
+                host='localhost',
+                database='absen',
+                user='root',
+                password='root'
+            )
+            cursor = connection.cursor()
             cursor.execute(mysql_select_query, data)
             records = cursor.fetchall()
             for row in records:
@@ -66,8 +88,10 @@ class TambahKaryawan:
             print("Error while searching data: ", error)
         finally:
             print(f"NIK: {row[0]}\nNama: {row[1]}")
+            cursor.close()
+            connection.close()
 
-    def insert_absen(self, id, nama, jabatan):
+    def insert_absen(self, id, nama):
         mysql_insert_absen = ("INSERT INTO absensi (nik, hari, jam) VALUES (%s, %s, %s)")
         tanggal = datetime.date.today()
         tanggal_print = tanggal.strftime("%d-%B-%Y")
@@ -76,15 +100,20 @@ class TambahKaryawan:
         data = (id, tanggal, jam)
 
         try:
-            cursor = self.connection.cursor()
+            connection = mysql.connector.connect(
+                host='localhost',
+                database='absen',
+                user='root',
+                password='root'
+            )
+            cursor = connection.cursor()
             cursor.execute(mysql_insert_absen, data)
-            self.connection.commit()
+            connection.commit()
+
         except mysql.connector.Error as error:
             print("Error while insert absen data: ", error)
         finally:
+            print(cursor.rowcount, "Data berhasil diinput")
             print(f"Selamat datang {nama} \nAbsen {tanggal_print}, {jam}")
-
-    def close_connection(self):
-        if self.connection.is_connected():
-            self.connection.close()
-            print("Koneksi database diputus")
+            cursor.close()
+            connection.close()
