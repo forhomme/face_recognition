@@ -311,6 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def train_picture(self):
         self.statusLabel.setText("Prose training wajah")
+        QtTest.QTest.qWait(1000)
         train_app = TrainPicture()
         samples, ids = train_app.get_image_and_label()
         train_app.train_and_save(samples, ids)

@@ -9,6 +9,7 @@ class TambahKaryawan:
         try:
             connection = mysql.connector.connect(
                 host='localhost',
+                port='3306',
                 database='absen',
                 user='root',
                 password='root'
@@ -53,6 +54,7 @@ class TambahKaryawan:
         try:
             connection = mysql.connector.connect(
                 host='localhost',
+                port='3306',
                 database='absen',
                 user='root',
                 password='root'
@@ -75,6 +77,7 @@ class TambahKaryawan:
         try:
             connection = mysql.connector.connect(
                 host='localhost',
+                port='3306',
                 database='absen',
                 user='root',
                 password='root'
@@ -102,6 +105,7 @@ class TambahKaryawan:
         try:
             connection = mysql.connector.connect(
                 host='localhost',
+                port='3306',
                 database='absen',
                 user='root',
                 password='root'
